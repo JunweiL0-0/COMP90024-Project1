@@ -31,4 +31,4 @@ def print_num_process(comm_size: int):
 
     Print the number of processors
     """
-    print(f"{SEPARATER} Running on {comm_size} process {SEPARATER}")
+    print(f"{SEPARATER} Running on {comm_size} processors {SEPARATER}")

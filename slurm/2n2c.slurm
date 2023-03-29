@@ -4,7 +4,7 @@
 #SBATCH --mail-user=junwliang1@student.unimelb.edu.au
 #SBATCH --mail-type=END
 #SBATCH --partition=physical
-#SBATCH --output=2node2core.txt
+#SBATCH --output=2n2c.txt
 # Wall time, hours:mins:seconds
 #SBATCH --time=0:1:0
 
@@ -13,14 +13,13 @@ module purge
 # Load new modules
 module load foss/2019b
 module load mpi4py
-module load python
 # Install ijson
 virtualenv ~/venvs/venv-python3.7.4
 source ~/venvs/venv-python3.7.4/bin/activate
-pip3 install ijson
+pip3 install --force-reinstall ijson
 
 # Run program
-srun -n 2 python3 "src/main.py"
+mpiexec -n 2 python3 "../src/main.py" "tinyTwitter.json"
 
 # Deactivate virtualenv
 deactivate

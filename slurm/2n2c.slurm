@@ -13,10 +13,10 @@ module purge
 # Load new modules
 module load foss/2019b
 module load mpi4py
-# Install ijson
+# Install extra required libraries locally
 virtualenv ~/venvs/venv-python3.7.4
 source ~/venvs/venv-python3.7.4/bin/activate
-pip3 install --force-reinstall ijson
+pip install -r ../requirements.txt
 
 # Run program
 mpiexec -n 2 python3 "../src/main.py" "tinyTwitter.json"

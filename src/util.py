@@ -1,5 +1,5 @@
 import json
-import ijson
+import bigjson
 
 SEPARATER = '*' * 5
 
@@ -14,16 +14,17 @@ def is_json(myjson: str):
         return False
     return True
 
-def get_num_of_tweet(twitter_file_path: str):
+def get_tweet_genereator(twitter_file_path: str, comm_size: int):
     """
     :param a string represent the path to the json file
     :return number of items in the json file
     """
-    counter = 0
     with open(twitter_file_path, "rb") as f:
-        for tweet in ijson.items(f, "item"):
-            counter += 1
-    return counter
+        json = bigjson.load(f)
+        index = 0
+        for tweet in json:
+            index = ((index + 1) % comm_size)
+            yield (index, tweet)
 
 def print_num_process(comm_size: int):
     """
@@ -32,3 +33,8 @@ def print_num_process(comm_size: int):
     Print the number of processors
     """
     print(f"{SEPARATER} Running on {comm_size} processors {SEPARATER}")
+
+def print_elapsed_time(end_time, start_time):
+    # Output running time on master processor
+    elapsed = end_time - start_time
+    print(f"Porgram elapsed time: {elapsed:.10f}")

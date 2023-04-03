@@ -1,59 +1,19 @@
-import os
+import ijson, json
+from TwitterData import TwitterData
 
 SEPARATER = '*' * 5
-    
 
-def get_start_end_position(twitter_file_path, comm_rank, comm_size):
-    # Total file size
-    total_file_size = os.stat(twitter_file_path).st_size
-    # Split into pieces: Say we have four prpcossers, 
-    chunk_size =  total_file_size // comm_size
-    # Starting position
-    start_position = chunk_size * comm_rank
-    # Ending position
-    end_postion = chunk_size * comm_rank
-    if comm_rank == 0:
-        # Master processor
-        start_position, end_position = 0, chunk_size
-    elif comm_rank != 0 and comm_rank != (comm_size - 1):
-        # Other processor. Not the last one
-        start_position, end_position = chunk_size * comm_rank, (chunk_size * (comm_rank + 1))
-    else:
-        # Other processor. The last one will read till the the EOF
-        start_position, end_position = chunk_size * comm_rank, total_file_size
-    # print(start_position, end_position)
-    return start_position, end_position
-
-def get_line_genereator(twitter_file_path, start_position, end_position):
+def get_all_tweet(twitter_file_path):
     """
-        :param a string represent the path to the json file
-        :return number of items in the json file
-
-        |_________
-                 |__________
-                           |__________(ignore the very end line and return None)
+    :param twitter_file_path: A string represent the path to the twitter file
     """
-    with open(twitter_file_path, "r") as f:
-        # Init variable
-        line = 0
-        # Navigate to staring position
-        f.seek(start_position)
-        # Only process the lines we want
-        while True:
-            # One line per time
-            line = f.readline()
-            if f.tell() < end_position:
-                yield line
-            else:
-                return None
+    with open(twitter_file_path, "rb") as f:
+        result = []
+        all_tweet = ijson.items(f, "item")
+        for tweet in all_tweet:
+            result.append(TwitterData(tweet))
+        return result
 
-def get_author_id(input_string):
-    # Json file have fixed format, we can use the slicing to retrive author id
-    return input_string[20:-3]
-
-def have_author_id(input_string):
-    author_id_format = "      \"author_id\": "
-    return author_id_format in input_string
 
 def print_num_process(comm_size: int):
     """
@@ -64,18 +24,53 @@ def print_num_process(comm_size: int):
     print(f"{SEPARATER} Running on {comm_size} processors {SEPARATER}")
 
 def print_elapsed_time(end_time, start_time):
-    # Output running time on master processor
+    """
+    :param end_time: ending time of the program
+    :param start_time: starting time of the program
+    """
+    # Calculate and output running time
     elapsed = end_time - start_time
     print(f"Porgram elapsed time: {elapsed:.10f}")
 
-def sum_two_defaultdict(dict1, dict2, datatype):
-    for key in dict2.keys():
-        dict1[key] += dict2[key]
-    return dict1
+def distribute_work_to_worker(comm, master_tweet_list):
+    """
+    :param comm: communicator
+    :param master_tweet_list: a list of TwitterData objects which contains all the tweet info
+    """
+    comm_rank, comm_size = comm.Get_rank(), comm.Get_size()
+    total_tweet = len(master_tweet_list)
+    # Calculate the chunck size base on the size
+    chunck_size = total_tweet // comm_size
+
+    # Send this to the worker nodes
+    for rank in range(1, comm_size):
+        # Send all the rest to the last node
+        if rank == comm_size - 1:
+            comm.send(master_tweet_list[chunck_size*(comm_size-1):], dest=rank)
+            continue
+        # Evenly split and send to other nodes
+        comm.send(master_tweet_list[chunck_size*rank : chunck_size*(rank+1)], dest=rank)
+
+def get_sal_data_list(sal_file_path):
+    # We only return the data we are interested in
+    targeted_gcc = {'7gdar', '6ghob', '4gade', '5gper', '2gmel', '1gsyd', '8acte', '9oter', '3gbri'}
+    result = dict()
+    with open("sal.json", 'r') as f:
+        for i in json.load(f).items():
+            place_full_name = i[0]
+            gcc_code = i[1]["gcc"]
+            if gcc_code in targeted_gcc:
+                result[gcc_code] = place_full_name
+        return result
+
 
 def solve_first_question(reduced_author_counter):
+    """
+    :param reduced_author_coutner
+    """
     # Get first ten
     print("Question1: Top 10 tweeters in terms of the number of tweets made irrespective of where they tweeted")
+    # Aligment for pretty priting
     print(f'{"Rank":<13}  {"AuthorID":<25}  {"Num Of Tweet Made":<12}')
     rank = 1
     for author_id, num_of_tweet in reduced_author_counter.most_common(10):

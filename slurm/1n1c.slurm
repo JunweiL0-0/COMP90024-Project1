@@ -8,8 +8,8 @@
 # Wall time, hours:mins:seconds
 #SBATCH --time=0:1:0
 
-# Remove old modules
-module purge
+# Remove old modules even the sticky modules
+module --force purge
 # Load new modules
 module load foss/2019b
 module load mpi4py
@@ -18,12 +18,14 @@ virtualenv ~/venvs/venv-python3.7.4
 source ~/venvs/venv-python3.7.4/bin/activate
 pip3 install ijson
 # Run program
+# Go to data folder
+cd ../data/
 # Split json file to chunks one chunck
 python3 split_script.py 1
 # Analyze 1 processors
 mpiexec -n 1 python3 "../src/main.py" "chunck1.json" "sal.json"
-# Delete chuncks 
-rm chunck*.json
+# Delete all json files and links
+rm *.json
 # Deactivate virtualenv
 deactivate
 # Job monitor command

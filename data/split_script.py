@@ -1,4 +1,4 @@
-import ijson, json, sys, re
+import ijson, json, sys, re, time
 
 def remove_bracket(input_string):
     # Remove ' ()' and anything inside the bracket
@@ -36,4 +36,6 @@ def split_script(total_processors):
             with open(f'chunck{file_count}.json', 'w') as output_file:
                 json.dump(chunk, output_file)
 
+start_time = time.time()
 split_script(int(sys.argv[1]))
+print(f'Split finished. Time used: {time.time()-start_time}')

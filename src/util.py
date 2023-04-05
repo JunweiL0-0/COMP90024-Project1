@@ -44,11 +44,17 @@ def solve_third_question(question3_dict):
     print("\nQuestion3: Tweeters that have tweeted in the most Greater Capital sities and the number of times they have tweeted from those locations. The top 10..")
     print(f'#{"Rank":<12}  {"Author Id":<30}  {"Number of Unique City Locations and #Tweets":<12}')
     rank = 1
-    # First by number of cities and second by the number of tweets
+    # First by number of cities and second by the number of tweets. Get top 10
     sorted_author_id = sorted(question3_dict.items(), key=lambda x: (len(x[1].keys()), sum(x[1].values())), reverse=True)[:10]
     for author_id, tweet_counter in sorted_author_id:
-        print(f'#{rank:<12}  {author_id:<30}  {len(tweet_counter.keys()):<6} TotalTweets{sum(tweet_counter.values())} {tweet_counter.items()}')
+        print(f'#{rank:<12}  {author_id:<30}  {len(tweet_counter.keys()):<6} (#TotalTweets{sum(tweet_counter.values())} - {q3_output_pretty(tweet_counter)})')
         rank += 1
+
+def q3_output_pretty(tweet_counter):
+    result = []
+    for gcc_code, number_of_tweet in tweet_counter.items():
+        result.append(f'#{number_of_tweet}{gcc_code}')
+    return (', ').join(result)
 
 def print_elapsed_time(end_time, start_time):
     """

@@ -6,7 +6,7 @@
 #SBATCH --partition=physical
 #SBATCH --output=1n1c.txt
 # Wall time, hours:mins:seconds
-#SBATCH --time=0:1:0
+#SBATCH --time=0:15:0
 
 # Remove old modules even the sticky modules
 module --force purge

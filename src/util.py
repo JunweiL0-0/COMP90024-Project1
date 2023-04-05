@@ -47,7 +47,7 @@ def solve_third_question(question3_dict):
     # First by number of cities and second by the number of tweets. Get top 10
     sorted_author_id = sorted(question3_dict.items(), key=lambda x: (len(x[1].keys()), sum(x[1].values())), reverse=True)[:10]
     for author_id, tweet_counter in sorted_author_id:
-        print(f'#{rank:<12}  {author_id:<30}  {len(tweet_counter.keys()):<6} (#TotalTweets{sum(tweet_counter.values())} - {q3_output_pretty(tweet_counter)})')
+        print(f'#{rank:<12}  {author_id:<30}  {len(tweet_counter.keys()):<6} (#{sum(tweet_counter.values())} tweets - {q3_output_pretty(tweet_counter)})')
         rank += 1
 
 def q3_output_pretty(tweet_counter):

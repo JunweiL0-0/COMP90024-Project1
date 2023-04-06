@@ -13,20 +13,8 @@ module --force purge
 # Load new modules
 module load foss/2019b
 module load mpi4py
-# Load virtual enviroment and install software locally
-virtualenv ~/venvs/venv-python3.7.4
-source ~/venvs/venv-python3.7.4/bin/activate
-pip3 install ijson
 # Run program
-# Go to data folder
-cd ../data/
-# Split json file to chunks one chunck
-python3 split_script.py 1
 # Analyze 1 processors
-mpiexec -n 1 python3 "../src/main.py" "chunck1.json" "sal.json"
-# Delete all json files and links
-rm *.json
-# Deactivate virtualenv
-deactivate
+mpiexec -n 1 python3 "../src/main.py" "../data/bigTwitter.json" "../data/sal.json"
 # Job monitor command
 my-job-stats -a -n -s

@@ -1,8 +1,34 @@
-import json, re
+import json, re, os
 from collections import defaultdict
 
 SEPARATER = '*' * 5
 
+def get_lines_to_read(twitter_file_path, comm_size):
+    # Total file length
+    total_file_lines = 718514355#get_total_file_length(twitter_file_path)
+    return total_file_lines // comm_size
+    # print("Total file length", total_file_length)
+    # # Total file size
+    # total_file_size = os.stat(twitter_file_path).st_size
+    # # Split it into piecesL Say we have four processors
+    # chunk_size = total_file_size // comm_size
+    # chunk_length = total_file_length // comm_size
+    # # Starting position
+    # start_position = chunk_size * comm_rank
+    # if comm_rank != (comm_size - 1):
+    #     # Other processors. Not the last one
+    #     start_position, lines_to_read = chunk_size * comm_rank, chunk_length
+    # else:
+    #     # The last one will read the file till the EOF
+    #     start_position, lines_to_read = chunk_size * comm_rank, total_file_length - ((comm_size - 1) * chunk_length)
+    # return start_position, lines_to_read
+
+def get_total_file_length(file_path):
+    with open(file_path, 'r') as f:
+        counter = 0
+        for line in f:
+            counter += 1
+        return counter       
 
 def print_num_process(comm_size: int):
     """
@@ -12,14 +38,61 @@ def print_num_process(comm_size: int):
     """
     print(f"{SEPARATER} Running on {comm_size} processors {SEPARATER}")
 
-def get_all_tweet(twitter_file_path):
+def get_all_tweet(twitter_file_path, start_position, lines_to_read):
     """
     :param twitter_file_path: A string represent the path to the twitter file
+    |_________
+            |__________
+                    |__________(ignore the very end line and return None)
     """
-    with open(twitter_file_path, "rb") as f:
+    with open(twitter_file_path, "r") as f:
         result = []
-        all_tweet = json.load(f)
-        return all_tweet
+        author_id, place_full_name = "", ""
+        # Navigate to starting position
+        f.seek(start_position)
+        counter = 0 
+        while counter < lines_to_read:
+            line = f.readline()
+            counter += 1
+            if have_author_id(line):
+                author_id = retrieve_author_id(line)
+                # There must be a full place name after the author id
+                while True:
+                    line = f.readline()
+                    counter += 1
+                    if have_full_place_name(line):
+                        place_full_name = retrieve_full_place_name(line)
+                        result.append({"author_id": author_id, "place_full_name": place_full_name})
+                        break
+            # Reset to empty string
+            author_id, place_full_name = "", ""
+        return result, f.tell()
+
+def have_author_id(input_string):
+    if len(input_string) > 19 and len(input_string) < 100:
+        if (input_string[6]=='\"' and input_string[7]=='a' and input_string[8]=='u' and input_string[9]=='t'
+            and input_string[10]=='h' and input_string[11]=='o' and input_string[12]=='r' and input_string[13]=='_'
+            and input_string[14]=='i' and input_string[15]=='d' and input_string[16]=='\"' and input_string[17]==':'):
+            return True
+    else:
+        return False
+
+def retrieve_full_place_name(input_string):
+    return re.findall(r'"(.*?)"', input_string)[1]
+
+def retrieve_author_id(input_string):
+    return re.findall(r'"(.*?)"', input_string)[1]
+
+def have_full_place_name(input_string):
+    if len(input_string) > 23 and len(input_string) < 100:
+        if (input_string[10]=='\"' and input_string[11]=='f' and input_string[12]=='u' and input_string[13]=='l'
+            and input_string[14]=='l' and input_string[15]=='_' and input_string[16]=='n' and input_string[17]=='a'
+            and input_string[18]=='m' and input_string[19]=='e' and input_string[20]=='\"' and input_string[21]==':'):
+            return True
+        else:
+            return False
+    else:
+        return False
 
 def solve_first_question(reduced_question1_counter):
     """
@@ -53,7 +126,7 @@ def solve_third_question(question3_dict):
 def q3_output_pretty(tweet_counter):
     result = []
     for gcc_code, number_of_tweet in tweet_counter.items():
-        result.append(f'#{number_of_tweet}{gcc_code}')
+        result.append(f'#{number_of_tweet} {gcc_code}')
     return (', ').join(result)
 
 def print_elapsed_time(end_time, start_time):
@@ -75,10 +148,10 @@ def get_sal_data_list(sal_file_path):
     # We only return the data we are interested in
     targeted_gcc = {'1gsyd', '2gmel', '3gbri', '4gade', '5gper', '6ghob', '7gdar', '8acte', '9oter'}
     result = defaultdict(set)
-    with open("sal.json", 'r') as f:
+    with open(sal_file_path, 'r') as f:
         for i in json.load(f).items():
-            # remove bracket ' ()' and all to lowercase and remove all white spaces before and after
-            place_full_name = remove_bracket(i[0]).lower().strip()
+            # all to lowercase and remove all white spaces before and after
+            place_full_name = i[0].lower().strip()
             gcc_code = i[1]["gcc"]
             if gcc_code in targeted_gcc:
                 result[gcc_code].add(place_full_name)
@@ -96,7 +169,7 @@ def is_in_gcc(place_full_name, sal_list):
     # We can predefind the gcc names here for later referencing. Except for 9oter
     gcc = {'sydney':'1gsyd', 'melbourne':'2gmel', 'brisbane':'3gbri', 'adelaide':'4gade', 'perth':'5gper', 'hobart':'6ghob', 'darwin':'7gdar', 'canberra':'8acte'}
     # Split it into parts and remove all white spaces before and after to find the exact match
-    place_full_name = [x.strip() for x in place_full_name.split(',')]
+    place_full_name = [x.strip() for x in place_full_name.lower().split(',')]
     if len(place_full_name) == 1:
         # Retrieve the full name
         place_full_name = place_full_name[0]

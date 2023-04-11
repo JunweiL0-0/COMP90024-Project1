@@ -14,7 +14,7 @@ module --force purge
 module load foss/2019b
 module load mpi4py
 # Run program
-# Analyze 1 processors
+# Analyze with 1 processors
 mpiexec -n 1 python3 "../src/main.py" "../data/bigTwitter.json" "../data/sal.json"
 # Job monitor command
 my-job-stats -a -n -s

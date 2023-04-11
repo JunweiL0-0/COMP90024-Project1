@@ -1,29 +1,35 @@
 """
-Author:
-Description: This main function is designed for analyzing the twitter data
+Author: Junwei Liang, Kai xu
 """
 
-# Import mpi so we can run on more than one node and processor
+# Import libraries
 from mpi4py import MPI
 from collections import Counter, defaultdict
 import sys, time, util, operator
 
 
 def master_processor(comm, twitter_file_path, sal_file_path):
+    """
+    :param comm: the communicator
+    :twitter_file_path: a string represent the path to the twitter joson file
+    :sal_file_path: a string represent the path to the sal json file
+
+    This function represent the master process.
+    """
     # Init parameters
     comm_rank, comm_size = comm.Get_rank(), comm.Get_size()
-    question1_counter = Counter()
-    question2_counter = Counter()
+    question1_counter, question2_counter = Counter(), Counter()
     question3_dict = defaultdict(Counter)
     unknown = set()
+
     # Print number of processors
     util.print_num_process(comm_size)
     # Get lines to read. (How many lines we want to read)
     # Boardcast it to all processors (Each processors will read the same amount of lines)
-    LINES_TO_READ = comm.bcast(util.get_lines_to_read(twitter_file_path, comm_size), root=0)
+    LINES_TO_READ = comm.bcast(util.get_lines_to_read(twitter_file_path, comm_size), root=)
     # Start reading the tweet
     master_tweet_list, end_position = util.get_all_tweet(twitter_file_path, 0, LINES_TO_READ)
-    # Send the endint position to next node to resume reading if we got extra processors
+    # Send the ending position to next node to resume reading if we got extra processors
     if comm_size > 1:
         comm.send(end_position, dest=comm_rank+1)
     # Get the sal list
@@ -31,6 +37,7 @@ def master_processor(comm, twitter_file_path, sal_file_path):
     # Start answing questions
     # Counte the number of tweet for each author id
     for tweet in master_tweet_list:
+        # Extract the data we are interested in
         author_id = tweet["author_id"]
         place_full_name = tweet['place_full_name']
         # Question 1
@@ -52,13 +59,20 @@ def master_processor(comm, twitter_file_path, sal_file_path):
     util.solve_third_question(reduced_question3_dict)
 
 def worker_processor(comm, twitter_file_path, sal_file_path):
+    """
+    :param comm: the communicator
+    :param twitter_file_path: a string represent the path to the twitter json file
+    :param sal_file_path: a string represent the paht to the sal json file
+
+    This function represent the worker process
+    """
     # Init parameters
     comm_rank, comm_size = comm.Get_rank(), comm.Get_size()
     master_node = 0
-    question1_counter = Counter()
-    question2_counter = Counter()
+    question1_counter, question2_counter = Counter(), Counter()
     question3_dict = defaultdict(Counter)
     unknown = set()
+
     # Get lines to read
     LINES_TO_READ = comm.bcast(None, root=master_node)
     # Wait till you get the starting position
@@ -73,6 +87,7 @@ def worker_processor(comm, twitter_file_path, sal_file_path):
     # Start answing questions
     # Count number of tweet for each author
     for tweet in worker_tweet_list:
+        # Extract the data we are interested in
         author_id = tweet["author_id"]
         place_full_name = tweet['place_full_name']
         # Question 1
@@ -91,6 +106,10 @@ def worker_processor(comm, twitter_file_path, sal_file_path):
 
 def main(twitter_file_path, sal_file_path):
     """
+    :param twitter_file_path: a string represent the path to the twitter file
+    :param sal_file_path: a string represent the path to the twitter file
+
+    This is the main program
     """
     # Start time
     program_start_time = time.time()
@@ -98,16 +117,19 @@ def main(twitter_file_path, sal_file_path):
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     if rank == 0:
+        # Master process
         master_processor(comm, twitter_file_path, sal_file_path)
         # Elapsed time
         util.print_elapsed_time(time.time(), program_start_time)
         # Terminates MPI execution env and exit the program
         MPI.Finalize()
     else:
+        # Worker process
         worker_processor(comm, twitter_file_path, sal_file_path)
 
 if __name__ == "__main__":
-    # run program
+    # Get file paths
     twitter_file_path = sys.argv[1]
     sal_file_path = sys.argv[2]
+    # run program
     main(twitter_file_path, sal_file_path)

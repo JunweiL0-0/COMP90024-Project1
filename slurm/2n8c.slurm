@@ -4,7 +4,7 @@
 #SBATCH --mail-user=junwliang1@student.unimelb.edu.au
 #SBATCH --mail-type=END
 #SBATCH --partition=physical
-#SBATCH --output=1n8c.txt
+#SBATCH --output=2n8c.txt
 # Wall time, hours:mins:seconds
 #SBATCH --time=0:15:0
 

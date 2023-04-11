@@ -26,7 +26,7 @@ def master_processor(comm, twitter_file_path, sal_file_path):
     util.print_num_process(comm_size)
     # Get lines to read. (How many lines we want to read)
     # Boardcast it to all processors (Each processors will read the same amount of lines)
-    LINES_TO_READ = comm.bcast(util.get_lines_to_read(twitter_file_path, comm_size), root=)
+    LINES_TO_READ = comm.bcast(util.get_lines_to_read(twitter_file_path, comm_size), root=0)
     # Start reading the tweet
     master_tweet_list, end_position = util.get_all_tweet(twitter_file_path, 0, LINES_TO_READ)
     # Send the ending position to next node to resume reading if we got extra processors
